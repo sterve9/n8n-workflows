@@ -1,0 +1,493 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "url": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -400,
+        272
+      ],
+      "id": "5245e57a-1ca8-4ebe-b168-50c8dd6fadd7",
+      "name": "download the image from replicate"
+    },
+    {
+      "parameters": {
+        "formTitle": "yacht desiner ",
+        "formDescription": "design your dream yacht with just a few clics",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "yacht name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "yacht description",
+              "fieldType": "textarea",
+              "placeholder": "please describe the look of your dream yacht",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "select the lenght of your yacht in meters",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "5"
+                  },
+                  {
+                    "option": "10"
+                  },
+                  {
+                    "option": "15"
+                  },
+                  {
+                    "option": "25"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "turbo sport package",
+              "fieldType": "checkbox",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "include"
+                  }
+                ]
+              }
+            },
+            {
+              "fieldLabel": "Name",
+              "placeholder": "please enter your name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Email",
+              "fieldType": "email",
+              "placeholder": "please enter your email so we can reach out to you with an offer",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -1664,
+        272
+      ],
+      "id": "95d55b9a-3573-494e-bdd5-d8db41d163a2",
+      "name": "🧾 FORM – Collect Yacht Details",
+      "webhookId": "5f4a7a2f-6125-4c10-9f1f-1bee69e7f6e8"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e5c5821c-d2a6-46f7-8b57-d10a79e6b8bd",
+              "name": "facts.entity.type",
+              "value": "={{ 'yacht' }}",
+              "type": "string"
+            },
+            {
+              "id": "4a9664a6-91d2-49ae-b8d8-1a4395f5ef22",
+              "name": "facts.entity.yacht.name",
+              "value": "={{ $json[\"yacht name\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "731fb326-2d23-470c-af18-580438edd09b",
+              "name": "facts.entity.yacht.description",
+              "value": "={{ $json[\"yacht description\"] }}",
+              "type": "string"
+            },
+            {
+              "id": "a7101aed-ac95-484f-b169-177ce23cfcc1",
+              "name": "facts.entity.yacht.length_m",
+              "value": "={{ Number($json[\"select the lenght of your yacht in meters\"]) }}",
+              "type": "number"
+            },
+            {
+              "id": "0a875642-c2db-452a-ae1d-40859182512f",
+              "name": "facts.entity.yacht.packages.turbo_sport",
+              "value": "={{ ($json[\"turbo sport package\"] ?? []).length > 0 }}",
+              "type": "boolean"
+            },
+            {
+              "id": "6c4302e6-c3b7-430a-ad5f-cfff6d20193b",
+              "name": "analysis.design.is_sporty",
+              "value": "={{ ($json[\"turbo sport package\"] ?? []).length > 0 }}",
+              "type": "boolean"
+            },
+            {
+              "id": "a1c2c835-08de-4a0b-a45e-2da545f351d5",
+              "name": "analysis.design.size_category ",
+              "value": "={{    Number($json[\"select the lenght of your yacht in meters\"]) >= 15     ? 'large'     : 'compact' }}",
+              "type": "string"
+            },
+            {
+              "id": "b63651c2-a2dd-4f97-ad6b-a9822d3913ac",
+              "name": "memory.state.step",
+              "value": "={{ 'init' }}",
+              "type": "string"
+            },
+            {
+              "id": "f3a0bff3-a76d-46a7-b435-09b7e5bb9100",
+              "name": "memory.state.created_at",
+              "value": "={{ $now }}",
+              "type": "string"
+            },
+            {
+              "id": "ee9a226e-acf3-4bb6-b02f-4f8d6e8f67d3",
+              "name": "memory.state.version",
+              "value": "={{ 1 }}",
+              "type": "number"
+            },
+            {
+              "id": "7a08408d-ef40-42ce-9bfb-9a9d8cef1998",
+              "name": "infra.source.trigger",
+              "value": "={{ 'form' }}",
+              "type": "string"
+            },
+            {
+              "id": "ebc1e941-92c3-476b-ba71-c2769d02e0a2",
+              "name": "infra.source.workflow",
+              "value": "={{ 'yacht-designer' }}",
+              "type": "string"
+            },
+            {
+              "id": "947b7985-ed7d-40c7-a3f6-ee1d8dce337a",
+              "name": "customer.name",
+              "value": "={{ $json['Name'] }}",
+              "type": "string"
+            },
+            {
+              "id": "5b7d5b44-4d07-42e6-86ec-211b9554837c",
+              "name": "customer.email",
+              "value": "={{ $json['Email'] }}",
+              "type": "string"
+            },
+            {
+              "id": "5d5293a9-286f-4758-bfa3-0fba750ad203",
+              "name": "customer.submitted_at",
+              "value": "={{ $json['submittedAt'] }}",
+              "type": "string"
+            },
+            {
+              "id": "4b8c4a1a-bdb7-4f92-b8d6-1c9b66bc164e",
+              "name": "customer.form_mode",
+              "value": "={{ $json['formMode'] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1408,
+        272
+      ],
+      "id": "f1953881-0c54-4899-b0ca-f181252a86a4",
+      "name": "⚙️ PREP – Canonical Yacht & Customer Data"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Design a yacht with the following characteristics:\n\nName: {{ $json.facts.entity.yacht.name }}\nLength: {{ $json.facts.entity.yacht.length_m }} meters\nSporty: {{ $json.analysis.design.is_sporty }}\n\nReturn STRICT JSON only.\n"
+            },
+            {
+              "role": "system",
+              "content": "#Role: You are a world class yacht designer with tons of experience in designing high end\nluxury yachts.\n#Task: You have two tasks.\n1) Your first task is to look at the provided inputs and create an image prompt that perfectly\nrepresents the yacht described in your inputs. If the \"Turbo Sport Package\" is included, make\nthe yacht look extremely sporty, fast and powerful.\n2) Your second task is to create three bullet points, that perfectly describe the yachts benefits.\nmakeup the information for these points but make it reasonable, e.g. engine type, power. Make\neach bullet point max 5-6 words long.\n#Output style:\nAlways output the same valid JSON structure and always use the exact same JSON key\nnames:\n{\n\"Yacht_image_prompt\": \"...\",\n\n\"Yacht_name\": \"...\",\n\"Bullet_point_1\": \"...\",\n\"Bullet_point_2\": \"...\",\n\"Bullet_point_3\": \"...\"\n}\nAlways output the same valid JSON structure and always use the exact same JSON key\nnames:\n{\n\"Yacht_image_prompt\": \"...\",\n\"Yacht_name\": \"...\",\n\"Bullet_point_1\": \"...\",\n\"Bullet_point_2\": \"...\",\n\"Bullet_point_3\": \"...\"\n}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        -1184,
+        272
+      ],
+      "id": "2fb35b82-abb2-4d20-baf4-547eb206d35a",
+      "name": "🧠 MODEL – Generate Yacht Prompt (OpenAI)",
+      "credentials": {
+        "openAiApi": {
+          "id": "TUDSdSciVM7c6fOs",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 🧩 1️⃣ Récupération du texte brut du LLM\nconst raw = $json.output?.[0]?.content?.[0]?.text;\nif (!raw) throw new Error('LLM output is empty or malformed');\n\n// 🧽 2️⃣ Nettoyage des balises Markdown éventuelles\nconst cleaned = raw\n  .replace(/```json/gi, '')\n  .replace(/```/g, '')\n  .trim();\n\n// 🧱 3️⃣ Parsing strict en JSON\nlet parsed;\ntry {\n  parsed = JSON.parse(cleaned);\n} catch (e) {\n  throw new Error('Invalid JSON from LLM: ' + e.message);\n}\n\n// 🧬 4️⃣ Canonisation de la structure du modèle\nreturn [\n  {\n    model: {\n      Yacht_image_prompt: String(parsed.Yacht_image_prompt || ''),\n      Yacht_name: String(parsed.Yacht_name || ''),\n      Bullet_point_1: String(parsed.Bullet_point_1 || ''),\n      Bullet_point_2: String(parsed.Bullet_point_2 || ''),\n      Bullet_point_3: String(parsed.Bullet_point_3 || ''),\n    },\n  },\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -832,
+        272
+      ],
+      "id": "7c5ee6c1-149e-4928-974f-73d5d4563f06",
+      "name": "🧹 CLEAN – Normalize Model JSON"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.replicate.com/v1/models/black-forest-labs/flux-1.1-pro-ultra/predictions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Prefer",
+              "value": "wait"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"input\": {\n    \"prompt\": \"{{ $json.model.Yacht_image_prompt }}\",\n    \"aspect_ratio\": \"3:2\",\n    \"output_format\": \"jpg\",\n    \"safety_tolerance\": 6\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -608,
+        272
+      ],
+      "id": "be7549f4-94c3-4cb7-8a57-9732375c2d0e",
+      "name": "🎨 IMG – Generate Yacht Image (Replicate)",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "WijO9KGykLzDlZYB",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "={{ $('🧹 CLEAN – Normalize Model JSON').item.json.model.Yacht_name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1m-Q9xMoz1NaY2yhYEsPjr0jjA0nEQXlX",
+          "mode": "list",
+          "cachedResultName": "yacht designer",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1m-Q9xMoz1NaY2yhYEsPjr0jjA0nEQXlX"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "07149f2d-e503-4728-93c6-4002aa1e3ce1",
+      "name": "📂 DRIVE – Upload Yacht Image",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "y3expYLfrN1j5Hra",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1gVcxQ43j6k_tcvOQF8-aIiGv6KRLld9bsKFmULVNWxQ",
+          "mode": "list",
+          "cachedResultName": "Yacht Designer CRM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gVcxQ43j6k_tcvOQF8-aIiGv6KRLld9bsKFmULVNWxQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "CRM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1gVcxQ43j6k_tcvOQF8-aIiGv6KRLld9bsKFmULVNWxQ/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Customer Name": "={{ $('⚙️ PREP – Canonical Yacht & Customer Data').item.json.customer.name }}",
+            "Customer Email": "={{ $('⚙️ PREP – Canonical Yacht & Customer Data').item.json.customer.email }}",
+            "Yacht Description": "={{ $('⚙️ PREP – Canonical Yacht & Customer Data').item.json.facts.entity.yacht.description }}",
+            "Yacht Lenght": "={{ $('⚙️ PREP – Canonical Yacht & Customer Data').item.json.facts.entity.yacht.length_m }}",
+            "Turbo Sport": "={{ $('⚙️ PREP – Canonical Yacht & Customer Data').item.json.analysis.design.is_sporty }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Customer Name",
+              "displayName": "Customer Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Customer Email",
+              "displayName": "Customer Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Yacht Description",
+              "displayName": "Yacht Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Yacht Lenght",
+              "displayName": "Yacht Lenght",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Turbo Sport",
+              "displayName": "Turbo Sport",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        32,
+        464
+      ],
+      "id": "eed81bc6-90c5-48e1-a4c0-37647bf1e009",
+      "name": "📊 CRM – Log Customer & Yacht Info",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "LBsdqAQjMc0mqLXh",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "download the image from replicate": {
+      "main": [
+        [
+          {
+            "node": "📂 DRIVE – Upload Yacht Image",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📊 CRM – Log Customer & Yacht Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧾 FORM – Collect Yacht Details": {
+      "main": [
+        [
+          {
+            "node": "⚙️ PREP – Canonical Yacht & Customer Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ PREP – Canonical Yacht & Customer Data": {
+      "main": [
+        [
+          {
+            "node": "🧠 MODEL – Generate Yacht Prompt (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 MODEL – Generate Yacht Prompt (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "🧹 CLEAN – Normalize Model JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧹 CLEAN – Normalize Model JSON": {
+      "main": [
+        [
+          {
+            "node": "🎨 IMG – Generate Yacht Image (Replicate)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎨 IMG – Generate Yacht Image (Replicate)": {
+      "main": [
+        [
+          {
+            "node": "download the image from replicate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "09a4271ff440e2d4ed1d23d70521c8ceadc5f0cf389b7a9fad7d7fcb78f3bb2c"
+  }
+}
