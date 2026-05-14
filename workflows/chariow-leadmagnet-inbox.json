@@ -1,0 +1,225 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-magnet-brevo",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "4f4c1fb2-8a70-4e7d-9217-0f24e99d5640",
+      "name": "Tally Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        1952,
+        -128
+      ],
+      "webhookId": "lead-magnet-brevo",
+      "notes": "URL du webhook à coller dans Tally : https://automation.sterveshop.cloud/webhook/lead-magnet-brevo"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || $input.first().json;\nconst fields = body?.data?.fields || [];\n\nlet prenom = '';\nlet email = '';\n\nfor (const field of fields) {\n  const label = (field.label || '').toLowerCase().trim();\n  const value = field.value || '';\n\n  if (label.includes('prenom') || label.includes('prénom') || label.includes('nom') || label.includes('name')) {\n    prenom = value.trim();\n  }\n  if (label.includes('mail') || label.includes('email') || field.type === 'INPUT_EMAIL') {\n    email = value.trim().toLowerCase();\n  }\n}\n\nif (!prenom && fields[0]) prenom = fields[0].value || 'Ami';\nif (!email && fields[1]) email = fields[1].value || '';\n\nif (!email) {\n  throw new Error('Email non trouvé dans la soumission Tally');\n}\n\nconst prenomFormate = prenom\n  ? prenom.charAt(0).toUpperCase() + prenom.slice(1).toLowerCase()\n  : 'Ami';\n\nreturn [{\n  json: {\n    prenom: prenomFormate,\n    email: email,\n    source: 'tally-lead-magnet',\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "8b725070-e143-41e5-b58e-71ffd1a49d29",
+      "name": "Extraire Prénom + Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2176,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "contact@sterveshop.cloud",
+        "toEmail": "={{ $json.email }}",
+        "subject": "=Ton guide est là, {{ $json.prenom }}",
+        "message": "=Salut {{ $json.prenom }},\n\nComme promis, voici tes 2 ressources :\n\nGuide PDF — Automatiser ses relances avec Brevo :\nhttps://drive.google.com/file/d/14RyHMRihF5i6ngu-Yk3XNDVntRAIaiSm/view?usp=sharing\n\nWorkflow n8n prêt à importer (JSON) :\nhttps://drive.google.com/file/d/165B99NA2YHyeMvt_sHEaNF_VoOpxIF7a/view?usp=sharing\n\nCommence par le guide — 20 minutes de lecture et tu peux avoir le workflow actif ce soir.\n\nUne question ? Réponds directement à cet email, je lis tout.\n\n— Sterve",
+        "options": {
+          "emailFormat": "text"
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        2416,
+        -128
+      ],
+      "id": "f068663a-271a-49eb-a374-7755cd6d315d",
+      "name": "Envoyer Email Brevo",
+      "credentials": {
+        "smtp": {
+          "id": "XEa3IB9YS9qcaD7V",
+          "name": "Brevo SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1b2c3d4-0001-0001-0001-000000000001",
+              "name": "prenom",
+              "value": "={{ $('Extraire Prénom + Email').item.json.prenom }}",
+              "type": "string"
+            },
+            {
+              "id": "a1b2c3d4-0001-0001-0001-000000000002",
+              "name": "email",
+              "value": "={{ $('Extraire Prénom + Email').item.json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "a1b2c3d4-0001-0001-0001-000000000003",
+              "name": "timestamp",
+              "value": "={{ $('Extraire Prénom + Email').item.json.timestamp }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "0b6f7df5-0fb6-4084-a066-72e54749350a",
+      "name": "Reconstruire données lead",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2640,
+        -128
+      ],
+      "notes": "Nécessaire car emailSend écrase le contexte JSON avec les données SMTP. Ce nœud récupère prenom/email/timestamp depuis le nœud d'extraction."
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "a0474476437b4f868fc6195065fe7227",
+          "__regex": "^([0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12})"
+        },
+        "title": "={{ $json.prenom }} — {{ $json.email }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Email|email",
+              "emailValue": "={{ $json.email }}"
+            },
+            {
+              "key": "Prénom|rich_text",
+              "textValue": "={{ $json.prenom }}"
+            },
+            {
+              "key": "Source|select",
+              "selectValue": "Facebook — Lead Magnet Brevo"
+            },
+            {
+              "key": "Date|date",
+              "dateValue": "={{ $json.timestamp }}"
+            },
+            {
+              "key": "Statut|select",
+              "selectValue": "Guide envoyé"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "241e8cf9-bfa4-4654-8a35-ba3b1c4db612",
+      "name": "Sauvegarder Lead Notion",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        2864,
+        -128
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "V6ZMCVTvDa6C7E0v",
+          "name": "Notion account 2"
+        }
+      },
+      "notes": "Database Notion Leads — ID : a0474476437b4f868fc6195065fe7227"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"ok\", \"message\": \"Guide envoyé à {{ $('Extraire Prénom + Email').item.json.email }}\" }",
+        "options": {}
+      },
+      "id": "aaf7633a-bc22-4184-a3cc-8910aa0abac8",
+      "name": "Réponse Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        3104,
+        -128
+      ]
+    }
+  ],
+  "connections": {
+    "Tally Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extraire Prénom + Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraire Prénom + Email": {
+      "main": [
+        [
+          {
+            "node": "Envoyer Email Brevo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envoyer Email Brevo": {
+      "main": [
+        [
+          {
+            "node": "Reconstruire données lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reconstruire données lead": {
+      "main": [
+        [
+          {
+            "node": "Sauvegarder Lead Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sauvegarder Lead Notion": {
+      "main": [
+        [
+          {
+            "node": "Réponse Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "09a4271ff440e2d4ed1d23d70521c8ceadc5f0cf389b7a9fad7d7fcb78f3bb2c"
+  }
+}

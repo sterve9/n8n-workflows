@@ -1,0 +1,904 @@
+{
+  "name": "Qualification & CRM Update",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "databaseId": {
+          "__rl": true,
+          "value": "2c689cfb-ec21-80ac-97f6-effeef0c0978",
+          "mode": "list",
+          "cachedResultName": "CRM – Diagnostic Rituel Masculin",
+          "cachedResultUrl": "https://www.notion.so/2c689cfbec2180ac97f6effeef0c0978"
+        }
+      },
+      "type": "n8n-nodes-base.notionTrigger",
+      "typeVersion": 1,
+      "position": [
+        -4304,
+        -2128
+      ],
+      "id": "9fb0ebf6-09fd-4149-bf2d-4ef835700bb0",
+      "name": "Notion Trigger",
+      "credentials": {
+        "notionApi": {
+          "id": "zE84XcdoK8pNXiPV",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "56650e69-626e-441e-945e-eca535b9b8b0",
+              "name": "nom",
+              "value": "={{ $json.Nom }}",
+              "type": "string"
+            },
+            {
+              "id": "b16d79ec-419d-4d5a-8550-e3aca49091a4",
+              "name": "email",
+              "value": "={{ $json.Email }}",
+              "type": "string"
+            },
+            {
+              "id": "79746cb7-a923-4590-96d8-dd3f921f43ff",
+              "name": "objectif",
+              "value": "={{ $json.Objectif }}",
+              "type": "string"
+            },
+            {
+              "id": "20a6c2c1-feee-4658-9052-a9a51df871e2",
+              "name": "urgence",
+              "value": "={{ Number($json.Urgence || 0) }}",
+              "type": "number"
+            },
+            {
+              "id": "e8c03c0c-8d71-489f-affb-57d7c16d9302",
+              "name": "pret_7_jours",
+              "value": "={{ ($json['Prêt pour 7 jours ?'] || '').toString().trim().toLowerCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "f4813de4-5eee-4fa5-a92b-9415badb5725",
+              "name": "whatsapp_clean",
+              "value": "={{ ($json.Whatsapp || $json.Téléphone || '') .toString().replace(/\\+/g,'').replace(/\\s/g,'') }}",
+              "type": "string"
+            },
+            {
+              "id": "debdc740-c8de-49e2-b4ec-f1b035c24d8d",
+              "name": "whatsapp_chat_id",
+              "value": "={{    ($json.Whatsapp || $json.Téléphone || '')     .toString()     .replace(/\\+/g,'')     .replace(/\\s/g,'')     .trim() + '@c.us' }}",
+              "type": "string"
+            },
+            {
+              "id": "a978b7f0-473c-4fd8-a630-7663c466c7c1",
+              "name": "lien_page_privee",
+              "value": "https://www.notion.so/Votre-diagnostic-masculin-personnalis-2c989cfbec2180cc8756ec86a9f935d5",
+              "type": "string"
+            },
+            {
+              "id": "8a480356-21f1-4694-8717-55a84becbe84",
+              "name": "consentement",
+              "value": "={{\n  ($json.consentement || '')\n    .toString()\n    .trim()\n    .toLowerCase()\n}}",
+              "type": "string"
+            },
+            {
+              "id": "f5101d2c-8084-4943-a771-cc5c2c808c8c",
+              "name": "page_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4080,
+        -2128
+      ],
+      "id": "6a4b2091-69c0-4ed7-885b-4f95ff828df0",
+      "name": "SET – normalisation prospect"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1383bbb8-6651-4c1a-b00d-62c8af081901",
+              "name": "crm_statut",
+              "value": "engagé",
+              "type": "string"
+            },
+            {
+              "id": "71522990-0b03-4cf2-9e3a-87bdd65e8255",
+              "name": "crm_action",
+              "value": "Envoyer le protocole",
+              "type": "string"
+            },
+            {
+              "id": "9df242db-2d28-4c9b-9bc8-a7fd767647af",
+              "name": "message_type",
+              "value": "whatsapp_vente",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3200,
+        -2384
+      ],
+      "id": "f6684d79-eab4-4e96-8eb2-a52b8509c2be",
+      "name": "SET – décision CRM (CHAUD)"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $json.page_id }}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Statut|select",
+              "selectValue": "={{ $json.crm_statut }}"
+            },
+            {
+              "key": "Action|select",
+              "selectValue": "={{ $json.crm_action }}"
+            },
+            {
+              "key": "Engagement|select",
+              "selectValue": "={{ $json.engagement }}"
+            },
+            {
+              "key": "whatsapp_chat_id|rich_text",
+              "textContent": "={{ $json.whatsapp_chat_id }}"
+            },
+            {
+              "key": "Whatsapp_clean|rich_text",
+              "textContent": "={{ $json.whatsapp_clean }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        -2528,
+        -2384
+      ],
+      "id": "1e1c1c14-c273-450e-8749-4dfeee6f020e",
+      "name": "Update CRM(Statut + Action)",
+      "credentials": {
+        "notionApi": {
+          "id": "zE84XcdoK8pNXiPV",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1383bbb8-6651-4c1a-b00d-62c8af081901",
+              "name": "crm_statut",
+              "value": "inactif",
+              "type": "string"
+            },
+            {
+              "id": "71522990-0b03-4cf2-9e3a-87bdd65e8255",
+              "name": "crm_action",
+              "value": "Aucune",
+              "type": "string"
+            },
+            {
+              "id": "4cab4d61-50ef-487c-b507-ee555e20b892",
+              "name": "engagement",
+              "value": "={{ $json.engagement }}",
+              "type": "string"
+            },
+            {
+              "id": "f9023ba7-5d43-4861-95e5-e6f6aa2fd092",
+              "name": "whatsapp_chat_id",
+              "value": "={{ $json.whatsapp_chat_id }}",
+              "type": "string"
+            },
+            {
+              "id": "e1a9af3f-5c03-4b83-b1f9-77d69d645111",
+              "name": "whatsapp_clean",
+              "value": "={{ $json.whatsapp_clean }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3232,
+        -1856
+      ],
+      "id": "6e41188c-adf7-4035-89d5-9c8701607ec8",
+      "name": "SET – décision CRM (FROID)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1812c85d-b33c-44e5-88f1-cbb3805b8e13",
+              "name": "nom",
+              "value": "={{ $json.nom }}",
+              "type": "string"
+            },
+            {
+              "id": "3c86e9ac-609d-4e1f-aea6-cac40108aa38",
+              "name": "whatsapp_clean",
+              "value": "={{ $json.whatsapp_clean }}",
+              "type": "string"
+            },
+            {
+              "id": "4348796f-3ceb-4481-8eea-b633c1836fca",
+              "name": "whatsapp_chat_id",
+              "value": "={{ $json.whatsapp_chat_id }}",
+              "type": "string"
+            },
+            {
+              "id": "917edc9c-cf2e-44f4-929c-36e089cc6b5a",
+              "name": "email",
+              "value": "={{ $json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "4b68c99d-27f3-45da-93ce-9b9a62cee751",
+              "name": "origine",
+              "value": "notion",
+              "type": "string"
+            },
+            {
+              "id": "31faa418-eb45-4198-9bbd-0531086473fc",
+              "name": "workflow",
+              "value": "W1",
+              "type": "string"
+            },
+            {
+              "id": "3a041b65-5114-4ced-a119-be763d3f8b4c",
+              "name": "timestamp",
+              "value": "={{ $now }}",
+              "type": "string"
+            },
+            {
+              "id": "56dbd7f9-674d-4c62-98fd-71e7505c867c",
+              "name": "objectif",
+              "value": "={{ $json.objectif }}",
+              "type": "string"
+            },
+            {
+              "id": "34efa47a-3505-4f42-9ec3-8f7d7a3915d5",
+              "name": "lien_page_privee",
+              "value": "={{ $json.lien_page_privee }}",
+              "type": "string"
+            },
+            {
+              "id": "f048ce00-1944-4bbf-94b5-5a34b153e7d6",
+              "name": "message_type",
+              "value": "whatsapp_vente",
+              "type": "string"
+            },
+            {
+              "id": "b540c997-87ff-48d4-9969-0296eea8ea82",
+              "name": "canal",
+              "value": "whatsapp_vente",
+              "type": "string"
+            },
+            {
+              "id": "1d04e1ca-9c8a-46ab-b379-0ae98359c277",
+              "name": "engagement",
+              "value": "={{ $json.engagement }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2304,
+        -2096
+      ],
+      "id": "f6c45bde-5808-4da7-9b5b-ac6ec4cdd3b0",
+      "name": "SET – CONTEXTE CANONIQUE"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c792b0d2-3352-4219-b51d-2139d7665b7c",
+              "name": "engagement",
+              "value": "={{ (() => {     const urgence = Number($json.urgence || 0);     const pret = ($json.pret_7_jours || '');      let e = 'froid';      if (urgence >= 7 && pret.includes('oui')) e = 'chaud';     else if (       (urgence >= 5 && urgence < 7) ||       pret.includes('peut') ||       pret.includes('pas sur') ||       pret.includes('pas sûr') ||       pret.includes('je ne sais')     ) e = 'tiede';      return e;   })() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3904,
+        -2128
+      ],
+      "id": "26ce1938-3dd3-4e2b-9bac-27dff966c730",
+      "name": "SET - CALCUL ENGAGEMENT"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.engagement }}",
+                    "rightValue": "chaud",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "fbd7ebee-f0a9-433c-a535-466a4f7e2859"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "chaud"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "85fb290c-846e-4ea1-a127-1b9dbee9daac",
+                    "leftValue": "={{ $json.engagement }}",
+                    "rightValue": "tiede",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "tiede"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c21e6d64-22c2-4fb8-8915-c4b64afa523a",
+                    "leftValue": "={{ $json.engagement }}",
+                    "rightValue": "froid",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "froid"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -3680,
+        -2144
+      ],
+      "id": "9134c795-737c-4c62-baa6-71306c121241",
+      "name": "Switch-engagement"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0c2c4a9e-385c-4717-a588-779443a7d106",
+              "name": "=nom",
+              "value": "={{ $json.nom }}",
+              "type": "string"
+            },
+            {
+              "id": "ac8da42d-61de-450b-8d9c-e1f74360584d",
+              "name": "objectif",
+              "value": "={{ $json.objectif }}",
+              "type": "string"
+            },
+            {
+              "id": "d2247af7-3c13-403b-86a4-fb8096e72cc9",
+              "name": "lien_page_privee",
+              "value": "={{ $json.lien_page_privee }}",
+              "type": "string"
+            },
+            {
+              "id": "83d56f31-426f-4bfc-a360-061741b0d58c",
+              "name": "engagement",
+              "value": "={{ $json.engagement }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2048,
+        -2096
+      ],
+      "id": "66592f78-2890-48c5-860f-2efc6c4a17eb",
+      "name": "SET – IA CONTEXT"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Contexte :\n- Prénom : {{ $json.nom }}\n\nTâche :\nRédige un message WhatsApp d’accueil après un diagnostic.\n\nStructure obligatoire :\n1. Salutation avec le prénom\n2. Remerciement pour le diagnostic\n3. Phrase indiquant que l’équipe analyse les réponses\n4. Une seule question ouverte, neutre et simple\n\nRédige uniquement le message final."
+            },
+            {
+              "role": "system",
+              "content": "Tu es un assistant chargé de rédiger des messages WhatsApp d’accueil après un diagnostic.\n\nTon rôle est strictement limité à :\n- accuser réception du diagnostic\n- installer un climat calme, sérieux et respectueux\n- ouvrir la conversation avec une question simple et ouverte\n\nContraintes absolues :\n- aucun argument de vente\n- aucune pression\n- aucune urgence\n- aucune interprétation du niveau d’engagement\n- aucun conseil\n- aucun jugement\n\nStyle :\n- humain\n- sobre\n- masculin\n- professionnel\n- lisible sur mobile\n\nTu produis uniquement le message final, rien d’autre.\n"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        -1904,
+        -2320
+      ],
+      "id": "f61d94b5-52b0-444d-a82b-cae268c907e8",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "17r6nBIaXYKKB4jy",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "799d2933-942b-4522-9ff2-ed1954fb19de",
+              "name": "message_clean",
+              "value": "={{ $json.output[0].content[0].text }}",
+              "type": "string"
+            },
+            {
+              "id": "62f3a4f8-58c7-45ca-9e78-29d1b6401cce",
+              "name": "whatsapp_chat_id",
+              "value": "={{ $('SET – CONTEXTE CANONIQUE').item.json.whatsapp_chat_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1600,
+        -2320
+      ],
+      "id": "b5eaf4e8-56ac-476f-a23f-b8453b77799c",
+      "name": "SET – MESSAGE CLEAN IA"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "42c8160a-9d5e-43e0-bc02-ff2524aa79ca",
+              "leftValue": "={{ $json.consentement }}",
+              "rightValue": "oui",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -2512,
+        -1920
+      ],
+      "id": "f865d407-a1e8-4479-8532-ca2fb74c8f66",
+      "name": "IF – CONSENTEMENT OK"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f3c7a4e9-d76c-4bc0-82c8-c8e26278b32b",
+              "name": "engagement",
+              "value": "={{ $json.engagement }}",
+              "type": "string"
+            },
+            {
+              "id": "8475246e-fb7d-4456-9f64-6c60ceb03eca",
+              "name": "crm_statut",
+              "value": "={{ $json.crm_statut }}",
+              "type": "string"
+            },
+            {
+              "id": "5575a829-c687-4627-971a-7160390c647d",
+              "name": "crm_action",
+              "value": "={{ $json.crm_action }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2704,
+        -2128
+      ],
+      "id": "5e462a01-3f9e-4739-bc2c-42bf1fdb49eb",
+      "name": "SET – CANON METIER"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "71a764b9-e9b0-4ced-a9a0-96b46e71fbc0",
+              "name": "crm_statut",
+              "value": "qualifié",
+              "type": "string"
+            },
+            {
+              "id": "b72f7264-c627-447b-ab57-3301353fd33a",
+              "name": "crm_action",
+              "value": "Nurturing",
+              "type": "string"
+            },
+            {
+              "id": "82be0fc0-f571-4bfd-832c-dc48b17a2d61",
+              "name": "message_type",
+              "value": "whatsapp_nurturing",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -3200,
+        -2128
+      ],
+      "id": "68504cfa-a9b5-4693-b818-9bb6a83d7e7f",
+      "name": "SET – décision CRM (tiede)"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://7105.api.greenapi.com/waInstance7105435827/sendMessage/ab1d0c6295bf4d15bc5e71581b391489abf5b0c42b784c0688",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{ $json.whatsapp_chat_id }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.message_clean }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -1360,
+        -2480
+      ],
+      "id": "fa39df9e-f629-4bdd-8469-99d12b4b91a1",
+      "name": "MSG_WA"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('SET – CONTEXTE CANONIQUE').item.json.email }}",
+        "subject": "Votre diagnostic personnalisé",
+        "message": "={{ $json.output[0].content[0].text }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        -1328,
+        -2160
+      ],
+      "id": "095bb7b4-cd69-4380-b683-d9c2ab40bcfc",
+      "name": "Send a message",
+      "webhookId": "91955a68-0d45-42e2-a935-b5b34ede7421",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "V4A8uS7oFq113ImS",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Notion Trigger": {
+      "main": [
+        [
+          {
+            "node": "SET – normalisation prospect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET – normalisation prospect": {
+      "main": [
+        [
+          {
+            "node": "SET - CALCUL ENGAGEMENT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET – décision CRM (CHAUD)": {
+      "main": [
+        [
+          {
+            "node": "SET – CANON METIER",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update CRM(Statut + Action)": {
+      "main": [
+        []
+      ]
+    },
+    "SET – décision CRM (FROID)": {
+      "main": [
+        [
+          {
+            "node": "SET – CANON METIER",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET – CONTEXTE CANONIQUE": {
+      "main": [
+        [
+          {
+            "node": "SET – IA CONTEXT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET - CALCUL ENGAGEMENT": {
+      "main": [
+        [
+          {
+            "node": "Switch-engagement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch-engagement": {
+      "main": [
+        [
+          {
+            "node": "SET – décision CRM (CHAUD)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SET – décision CRM (tiede)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SET – décision CRM (FROID)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET – IA CONTEXT": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "SET – MESSAGE CLEAN IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET – MESSAGE CLEAN IA": {
+      "main": [
+        [
+          {
+            "node": "MSG_WA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF – CONSENTEMENT OK": {
+      "main": [
+        [
+          {
+            "node": "SET – CONTEXTE CANONIQUE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET – CANON METIER": {
+      "main": [
+        [
+          {
+            "node": "Update CRM(Statut + Action)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF – CONSENTEMENT OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET – décision CRM (tiede)": {
+      "main": [
+        [
+          {
+            "node": "SET – CANON METIER",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "c42179f2-31bf-4d77-8138-4b7ba38a1cf5",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "feff99966d1fdda58ab74390919e1e5beab91f3fd6fb8c0105c07d7c36ad45b2"
+  },
+  "id": "RnwnrriAvfSmYFpm",
+  "tags": []
+}

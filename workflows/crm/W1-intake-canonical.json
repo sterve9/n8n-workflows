@@ -1,0 +1,672 @@
+{
+  "name": "W1 — INGESTION & FACTS",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "databaseId": {
+          "__rl": true,
+          "value": "2c689cfb-ec21-80ac-97f6-effeef0c0978",
+          "mode": "list",
+          "cachedResultName": "CRM – Diagnostic Rituel Masculin",
+          "cachedResultUrl": "https://www.notion.so/2c689cfbec2180ac97f6effeef0c0978"
+        }
+      },
+      "type": "n8n-nodes-base.notionTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2192,
+        -576
+      ],
+      "id": "22a4d1a7-05a6-4c89-bd67-a4a5dac3327d",
+      "name": "Notion Trigger",
+      "credentials": {
+        "notionApi": {
+          "id": "zE84XcdoK8pNXiPV",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b9089b1d-e459-401e-8c38-75c1669a2b0b",
+              "name": "event",
+              "value": "={{ ({\n  type: 'diagnostic_submitted',\n  source: 'notion',\n  received_at: $now\n}) }}",
+              "type": "object"
+            },
+            {
+              "id": "79dea6ff-01f2-440a-ac71-91c7dd1e1453",
+              "name": "facts.prospect.email",
+              "value": "={{ $json.Email || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "d0a7d696-0d66-42fa-bb7c-a983fef1870a",
+              "name": "facts.prospect.objectif",
+              "value": "={{ $json.Objectif || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "b95de8a1-2b03-473c-885b-4cff9a134e8e",
+              "name": "facts.prospect.urgence",
+              "value": "={{ Number($json.Urgence || 0) }}",
+              "type": "number"
+            },
+            {
+              "id": "5b9f3af5-9f1b-44ac-a511-8d4b8337d1c8",
+              "name": "facts.prospect.pret_7_jours",
+              "value": "={{ ($json['Prêt pour 7 jours ?'] || '').toString().trim().toLowerCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "d7d08e87-804b-4efa-9940-b40f03484b39",
+              "name": "facts.channel.type",
+              "value": "whatsapp",
+              "type": "string"
+            },
+            {
+              "id": "36ce115c-6a95-4163-9f5c-17a00397e0c6",
+              "name": "facts.channel.whatsapp_clean",
+              "value": "={{ ($json.Whatsapp || $json.Téléphone || '').toString().replace(/\\+/g,'').replace(/\\s/g,'') }}",
+              "type": "string"
+            },
+            {
+              "id": "404b22a3-d0ec-4af2-a9e3-acf1f2b0a2d7",
+              "name": "facts.channel.whatsapp_chat_id",
+              "value": "={{ (($json.Whatsapp || $json.Téléphone || '').toString().replace(/\\+/g,'').replace(/\\s/g,'').trim()) + '@c.us' }}",
+              "type": "string"
+            },
+            {
+              "id": "ec5cf558-fd49-4d40-b346-b9e22b0a859b",
+              "name": "facts.consentement",
+              "value": "={{ ($json.consentement || '').toString().trim().toLowerCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "e0750afa-7f81-41f5-9892-366c6ad2474d",
+              "name": "facts.raw_payload",
+              "value": "={{ $json }}",
+              "type": "object"
+            },
+            {
+              "id": "62f143f9-1b14-47c9-a6aa-bb4ab8c5b88a",
+              "name": "meta.workflow",
+              "value": "W1",
+              "type": "string"
+            },
+            {
+              "id": "ecf47262-7a8d-44f9-a900-3ac0941cc883",
+              "name": "meta.version",
+              "value": "1.0.0",
+              "type": "string"
+            },
+            {
+              "id": "1546fb1a-0279-45ca-88cd-b9f0d9470712",
+              "name": "infra",
+              "value": "={{ ({ notion: { page_id: $json.id } }) }}",
+              "type": "object"
+            },
+            {
+              "id": "3d512491-843d-408e-ba2d-b48c5a1ea55d",
+              "name": "facts.prospect.nom",
+              "value": "={{ $json.Nom || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1984,
+        -576
+      ],
+      "id": "e92ef8e2-76c9-4acf-86e5-6fc58e9306b5",
+      "name": "SET – FACTS NORMALISATION (CANONIQUE)"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d83fe742-6d40-48f1-a446-0b83fcee1c53",
+              "name": "analysis.intent.type",
+              "value": "={{ $json.facts.prospect.urgence >= 7 ? 'achat' : 'information' }}",
+              "type": "string"
+            },
+            {
+              "id": "e8ee36eb-209d-47ed-962e-398db491b81e",
+              "name": "analysis.intent.confidence",
+              "value": "={{ Math.min(1, $json.facts.prospect.urgence / 10) }}",
+              "type": "number"
+            },
+            {
+              "id": "6dfe45d2-04e5-4e55-b1ad-f1c16f697b8a",
+              "name": "analysis.intent.source",
+              "value": "rules_v1",
+              "type": "string"
+            },
+            {
+              "id": "01ab3029-587f-4471-9b9b-1798ef8605bb",
+              "name": "analysis.priority.level",
+              "value": "medium",
+              "type": "string"
+            },
+            {
+              "id": "9e8e4c99-e935-45f3-972e-6c6794440227",
+              "name": "analysis.priority.reason",
+              "value": "rules_v1_default",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1776,
+        -576
+      ],
+      "id": "60e334de-cebb-4bcd-ac6a-31caaa5ffc3d",
+      "name": "SET – INTENT ANALYSIS (RULES v1)"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.analysis.intent.type }}",
+                    "rightValue": "achat",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "7d86a0c8-d935-47b7-971b-67bca6b71974"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "achat"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "a8b875ef-c009-4603-8021-4d649b45e0cd",
+                    "leftValue": "={{ $json.analysis.intent.type }}",
+                    "rightValue": "information",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "information"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -1536,
+        -576
+      ],
+      "id": "866ba031-9afa-4790-be13-5d62fcc70d93",
+      "name": "SWITCH – INTENT ROUTING"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "31374f90-a99d-484a-9b53-f227fad26ee6",
+              "name": "outgoing_message.channel",
+              "value": "whatsapp",
+              "type": "string"
+            },
+            {
+              "id": "d2ee9949-d885-479e-a771-036e0f80a60a",
+              "name": "outgoing_message.chat_id",
+              "value": "={{ $json.facts.channel.whatsapp_chat_id }}",
+              "type": "string"
+            },
+            {
+              "id": "0b78581b-a02b-43a4-ba60-1426f826ff7a",
+              "name": "outgoing_message.text",
+              "value": "={{ `Salut ${$json.facts.prospect.nom || ''} 👋\\n\\nMerci pour ton diagnostic 🙏\\n\\nVu ton niveau d’urgence, je pense qu’on peut clairement avancer ensemble.\\n\\nSi tu veux, je peux te proposer la prochaine étape concrète et voir comment t’aider rapidement.\\n\\nDis-moi si tu es dispo 🙂` }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1232,
+        -672
+      ],
+      "id": "4139b8d3-99c9-4fe9-95ac-4f18f393e565",
+      "name": "SET – MESSAGE ACHAT"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0140b5d7-e1c0-4348-8c81-a148e1328397",
+              "name": "outgoing_message.channel",
+              "value": "whatsapp",
+              "type": "string"
+            },
+            {
+              "id": "7a7d014c-13fa-4aec-a001-1ff5f4166558",
+              "name": "outgoing_message.chat_id",
+              "value": "={{ $json.facts.channel.whatsapp_chat_id }}",
+              "type": "string"
+            },
+            {
+              "id": "148b99f1-a9b9-4df2-9b59-731cd43162ba",
+              "name": "outgoing_message.text",
+              "value": "={{ `Salut ${$json.facts.prospect.nom || ''} 👋\\n\\nMerci d’avoir pris le temps de remplir le diagnostic 🙏\\n\\nJe peux t’expliquer plus en détail comment ça fonctionne et répondre précisément à ce que tu traverses en ce moment.\\n\\nDis-moi simplement ce que tu aimerais éclaircir 🙂` }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1232,
+        -480
+      ],
+      "id": "802c5bb8-6724-4637-9974-3d5c43ac8e2b",
+      "name": "SET – MESSAGE INFORMATION"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://7105.api.greenapi.com/waInstance7105435827/sendMessage/ab1d0c6295bf4d15bc5e71581b391489abf5b0c42b784c0688",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{ $json.outgoing_message.chat_id }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.outgoing_message.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -544,
+        -832
+      ],
+      "id": "7bad51e2-cdfb-4233-a426-27a088219d25",
+      "name": "msg-whatsapp"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4bdb0974-065e-4ebf-aabf-7d1d784e3a88",
+              "name": "memory.conversation.status",
+              "value": "message_sent",
+              "type": "string"
+            },
+            {
+              "id": "06f1468f-560a-4f4c-ae9b-8f9d393f6614",
+              "name": "memory.conversation.last_message_type",
+              "value": "initial",
+              "type": "string"
+            },
+            {
+              "id": "2fd3aa00-ee48-40f6-9a7f-9e5e82683546",
+              "name": "memory.conversation.last_message_at",
+              "value": "={{ $now }}",
+              "type": "string"
+            },
+            {
+              "id": "9c21788c-53d5-4a4c-b2a2-cfe30e498144",
+              "name": "memory.conversation.reply_received",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "06b6a037-6281-456c-bb53-d3c68d3cc6ad",
+              "name": "memory.conversation.attempt_count",
+              "value": 1,
+              "type": "number"
+            },
+            {
+              "id": "a5d0fd90-7c50-48e6-9b31-db113ba4d700",
+              "name": "memory.conversation.next_action_at",
+              "value": "={{$now.plus({ days: 2 })}}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -144,
+        -832
+      ],
+      "id": "b2c87337-3023-48a6-a403-595071589503",
+      "name": "SET – MEMORY INIT"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $json.infra.notion.page_id }}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Reply Received|checkbox",
+              "checkboxValue": "={{ $json.memory.conversation.reply_received }}"
+            },
+            {
+              "key": "Last Message At|date",
+              "date": "={{ $json.memory.conversation.last_message_at }}"
+            },
+            {
+              "key": "Last Message Type|select",
+              "selectValue": "={{ $json.memory.conversation.last_message_type }}"
+            },
+            {
+              "key": "Conversation Status|select",
+              "selectValue": "={{ $json.memory.conversation.status }}"
+            },
+            {
+              "key": "Attempt Count|number",
+              "numberValue": "={{ $json.memory.conversation.attempt_count }}"
+            },
+            {
+              "key": "Next Action At|date",
+              "date": "={{ $json.memory.conversation.next_action_at }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        32,
+        -832
+      ],
+      "id": "d6de1b65-34df-4e84-9852-3bfde8542b50",
+      "name": "Update a database page",
+      "credentials": {
+        "notionApi": {
+          "id": "zE84XcdoK8pNXiPV",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0fc3472e-2917-4464-8203-617fe58003e2",
+              "name": "_shadow",
+              "value": "={{ $json }}",
+              "type": "object"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -960,
+        -560
+      ],
+      "id": "6ddfc99f-5119-44c6-a76d-3f80e1b4bfed",
+      "name": "SET – Shadow Canonical"
+    },
+    {
+      "parameters": {
+        "jsCode": "const merged = {\n  ...$json,\n  ...$('SET – Shadow Canonical').item.json,\n};\ndelete merged._shadow;\nreturn [merged];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -336,
+        -832
+      ],
+      "id": "6894b2ef-ff73-4105-952e-564ee4951234",
+      "name": "restore_shadow_canonical"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "718dbb5b-e65a-45d9-ba4f-fc5128a80cf6",
+              "leftValue": "={{ $json.facts.consentement }}",
+              "rightValue": "oui",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -768,
+        -624
+      ],
+      "id": "1e6744ad-3aa1-486f-b451-0e17675073d6",
+      "name": "If_consentement_ok"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Notion Trigger": {
+      "main": [
+        [
+          {
+            "node": "SET – FACTS NORMALISATION (CANONIQUE)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET – FACTS NORMALISATION (CANONIQUE)": {
+      "main": [
+        [
+          {
+            "node": "SET – INTENT ANALYSIS (RULES v1)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET – INTENT ANALYSIS (RULES v1)": {
+      "main": [
+        [
+          {
+            "node": "SWITCH – INTENT ROUTING",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SWITCH – INTENT ROUTING": {
+      "main": [
+        [
+          {
+            "node": "SET – MESSAGE ACHAT",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "SET – MESSAGE INFORMATION",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET – MESSAGE ACHAT": {
+      "main": [
+        [
+          {
+            "node": "SET – Shadow Canonical",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET – MESSAGE INFORMATION": {
+      "main": [
+        [
+          {
+            "node": "SET – Shadow Canonical",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "msg-whatsapp": {
+      "main": [
+        [
+          {
+            "node": "restore_shadow_canonical",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET – MEMORY INIT": {
+      "main": [
+        [
+          {
+            "node": "Update a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SET – Shadow Canonical": {
+      "main": [
+        [
+          {
+            "node": "If_consentement_ok",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "restore_shadow_canonical": {
+      "main": [
+        [
+          {
+            "node": "SET – MEMORY INIT",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If_consentement_ok": {
+      "main": [
+        [
+          {
+            "node": "msg-whatsapp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "ae9f0805-0023-4cd7-9c57-a5614b5b6efc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "feff99966d1fdda58ab74390919e1e5beab91f3fd6fb8c0105c07d7c36ad45b2"
+  },
+  "id": "oTX5aHwePkPyih5i",
+  "tags": []
+}

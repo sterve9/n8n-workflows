@@ -1,0 +1,318 @@
+{
+  "name": "vente-automatique-V3",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-incoming",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-1456, 176],
+      "id": "ff9623fa-5c4a-4894-a39e-ca20901156d8",
+      "name": "📩 WhatsApp Incoming",
+      "webhookId": "cfef542f-f524-45cc-9850-e06a258ef1e4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "filter-incoming-only",
+              "leftValue": "={{ $json.body.typeWebhook }}",
+              "rightValue": "incomingMessageReceived",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-1248, 176],
+      "id": "a1b2c3d4-0001-0000-0000-000000000001",
+      "name": "🔒 Filtrer — Messages entrants seulement"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gère les 2 types de messages WhatsApp : textMessage ET extendedTextMessage\nconst msgData = $json.body.messageData || {};\n\nlet rawText = '';\nif (msgData.typeMessage === 'textMessage') {\n  rawText = msgData.textMessageData?.textMessage || '';\n} else if (msgData.typeMessage === 'extendedTextMessage') {\n  rawText = msgData.extendedTextMessageData?.text || '';\n}\n\n// Nettoyage : trim + garde seulement le premier caractère si \"1 \", \" 2\", etc.\nconst text = rawText.trim();\n\n// chatId de l'expéditeur pour répondre\nconst chatId = $json.body.senderData?.chatId || '';\nconst senderName = $json.body.senderData?.senderName || 'toi';\n\nreturn [{ text, chatId, senderName }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-1008, 176],
+      "id": "197d15e6-f000-428c-9f99-4cfede74f982",
+      "name": "normalize-text"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "1",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "74bb34e1-e0fd-47ce-8474-b23afc57e966"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Offre 1 — Cure Express"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "d2f41ad1-e0d0-4cf6-9d5e-0f28b50c02d7",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "2",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Offre 2 — Cure Profonde"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "89cbcab2-1734-4bea-8e01-eb33d3add57f",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "3",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Offre 3 — Pack Complet"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Réponse inconnue"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [-752, 144],
+      "id": "e3203b59-b733-409b-992e-6ea2fd6b0c6b",
+      "name": "📌 Switch Réponses WhatsApp"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://7105.api.greenapi.com/waInstance7105435827/sendMessage/ab1d0c6295bf4d15bc5e71581b391489abf5b0c42b784c0688",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{ $json.chatId }}"
+            },
+            {
+              "name": "message",
+              "value": "=Super choix ⚡\n\nVoici ton lien pour la *Cure Express 7 Jours* :\n👉 https://myfurbrush.com/rituelancestral7jours\n\nN'oublie pas ton code *ANCESTRAL50* au moment du paiement pour avoir *-50%* 🎁\n\nCode valable jusqu'au *5 avril 2026* uniquement ⏳\n\n_Tu as des questions ? Réponds ici, je suis là 😊_"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5f73847e-632e-4a4a-aad2-66afbedb9245",
+      "name": "🔗 Envoyer lien Offre 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-320, -32]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://7105.api.greenapi.com/waInstance7105435827/sendMessage/ab1d0c6295bf4d15bc5e71581b391489abf5b0c42b784c0688",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{ $json.chatId }}"
+            },
+            {
+              "name": "message",
+              "value": "=Excellent choix 🔥\n\nVoici ton lien pour la *Cure Profonde 40 Jours* :\n👉 https://myfurbrush.com/cureprofonde40jours\n\nN'oublie pas ton code *ANCESTRAL50* au moment du paiement pour avoir *-50%* 🎁\n\nCode valable jusqu'au *5 avril 2026* uniquement ⏳\n\n_Tu as des questions ? Réponds ici, je suis là 😊_"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ac5794f7-40af-4e40-a198-76dea16c4fca",
+      "name": "🔗 Envoyer lien Offre 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-336, 160]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://7105.api.greenapi.com/waInstance7105435827/sendMessage/ab1d0c6295bf4d15bc5e71581b391489abf5b0c42b784c0688",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{ $json.chatId }}"
+            },
+            {
+              "name": "message",
+              "value": "=Le meilleur choix 👑\n\nVoici ton lien pour le *Pack Complet (accès à vie)* :\n👉 https://myfurbrush.com/packcompletancestral\n\nN'oublie pas ton code *ANCESTRAL50* au moment du paiement pour avoir *-50%* 🎁\n\nCode valable jusqu'au *5 avril 2026* uniquement ⏳\n\n_Tu as des questions ? Réponds ici, je suis là 😊_"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b3b437f1-fbdc-47dd-9835-c7583f92a7a8",
+      "name": "🔗 Envoyer lien Offre 3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-320, 336]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://7105.api.greenapi.com/waInstance7105435827/sendMessage/ab1d0c6295bf4d15bc5e71581b391489abf5b0c42b784c0688",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{ $json.chatId }}"
+            },
+            {
+              "name": "message",
+              "value": "=Hmm, je n'ai pas bien compris 😅\n\nRéponds simplement *1*, *2* ou *3* pour choisir ton offre :\n\n*1* → Cure Express 7 Jours (2 950 FCFA)\n*2* → Cure Profonde 40 Jours (5 950 FCFA)\n*3* → Pack Complet à vie (8 950 FCFA)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2bb9f459-3689-446c-9dfb-6aa849676878",
+      "name": "❓ Réponse inconnue — Relancer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-336, 528]
+    }
+  ],
+  "connections": {
+    "📩 WhatsApp Incoming": {
+      "main": [
+        [
+          {
+            "node": "🔒 Filtrer — Messages entrants seulement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔒 Filtrer — Messages entrants seulement": {
+      "main": [
+        [
+          {
+            "node": "normalize-text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "normalize-text": {
+      "main": [
+        [
+          {
+            "node": "📌 Switch Réponses WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📌 Switch Réponses WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "🔗 Envoyer lien Offre 1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🔗 Envoyer lien Offre 2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🔗 Envoyer lien Offre 3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "❓ Réponse inconnue — Relancer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "09a4271ff440e2d4ed1d23d70521c8ceadc5f0cf389b7a9fad7d7fcb78f3bb2c"
+  }
+}

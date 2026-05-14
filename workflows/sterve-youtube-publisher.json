@@ -1,0 +1,182 @@
+{
+  "name": "Auto YouTube Video Creation & Publish",
+  "nodes": [
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            { "hour": 9, "minute": 0 }
+          ]
+        }
+      },
+      "name": "Scheduled Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [200, 150]
+    },
+    {
+      "parameters": {
+        "sheetId": "GOOGLE_SHEET_ID_IDEAS",
+        "range": "Ideas!A1:E",
+        "options": { "filterByFormula": "=status=\"en production\"" }
+      },
+      "name": "Get Idea Row",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 2,
+      "position": [450, 150]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [{ "value1": "={{$json[\"id\"]}}", "operation": "isNotEmpty" }]
+        }
+      },
+      "name": "Check Idea Exists",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [700, 150]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "input": "Écris un script vidéo détaillé pour YouTube à partir de l'idée suivante:\nTitre: {{$json[\"Titre\"]}}\nDescription: {{$json[\"Brief\"]}}\nRetourne: script complet, prompts d’images, titre YouTube SEO, tags.",
+        "options": {}
+      },
+      "name": "Generate Script & Metadata (OpenAI)",
+      "type": "n8n-nodes-base.openai",
+      "typeVersion": 2,
+      "position": [950, 150]
+    },
+    {
+      "parameters": {
+        "sheetId": "GOOGLE_SHEET_ID_MEDIA",
+        "range": "Media!A1:C"
+      },
+      "name": "Get Media Links",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 2,
+      "position": [1150, 150]
+    },
+    {
+      "parameters": {
+        "url": "https://API_RENDERING_SERVICE/submit",
+        "options": {
+          "body": {
+            "video_script": "={{$json[\"text\"]}}",
+            "images": "={{$json[\"prompts\"]}}",
+            "audio": "={{$json[\"AudioLink\"]}}"
+          },
+          "json": true
+        }
+      },
+      "name": "Render Video (POST)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1350, 150]
+    },
+    {
+      "parameters": { "waitTime": 150000 },
+      "name": "Wait For Video",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [1550, 150]
+    },
+    {
+      "parameters": {
+        "url": "https://API_RENDERING_SERVICE/status/{{$json[\"render_id\"]}}"
+      },
+      "name": "Check Render Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [1750, 150]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            { "value1": "={{$json[\"status\"]}}", "operation": "equal", "value2": "completed" }
+          ]
+        }
+      },
+      "name": "Did Rendering Succeed?",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [1950, 150]
+    },
+    {
+      "parameters": {
+        "sheetId": "GOOGLE_SHEET_ID_IDEAS",
+        "range": "Ideas!A1:E",
+        "keyRow": "={{$json[\"id\"]}}",
+        "values": { "status": "Échec" }
+      },
+      "name": "Update Idea Row - Error",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 2,
+      "position": [2150, 50]
+    },
+    {
+      "parameters": {
+        "url": "={{$json[\"video_url\"]}}"
+      },
+      "name": "Download Video",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [2150, 250]
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "additionalFields": {
+          "title": "={{$json[\"title\"]}}",
+          "description": "={{$json[\"description\"]}}",
+          "tags": "={{$json[\"tags\"]}}",
+          "privacyStatus": "unlisted"
+        },
+        "file": {
+          "binaryPropertyName": "data"
+        }
+      },
+      "name": "Upload to YouTube",
+      "type": "n8n-nodes-base.youtube",
+      "typeVersion": 1,
+      "position": [2350, 250]
+    },
+    {
+      "parameters": {
+        "sheetId": "GOOGLE_SHEET_ID_IDEAS",
+        "range": "Ideas!A1:E",
+        "keyRow": "={{$json[\"id\"]}}",
+        "values": { "status": "Publié", "video_url": "={{$json[\"video_url\"]}}" }
+      },
+      "name": "Update Idea Row - Success",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 2,
+      "position": [2550, 250]
+    }
+  ],
+  "connections": {
+    "Scheduled Trigger": { "main": [[{ "node": "Get Idea Row", "type": "main", "index": 0 }]] },
+    "Get Idea Row": { "main": [[{ "node": "Check Idea Exists", "type": "main", "index": 0 }]] },
+    "Check Idea Exists": {
+      "main": [
+        [{ "node": "Generate Script & Metadata (OpenAI)", "type": "main", "index": 0 }],
+        [{ "node": "Stop", "type": "main", "index": 0 }]
+      ]
+    },
+    "Generate Script & Metadata (OpenAI)": { "main": [[{ "node": "Get Media Links", "type": "main", "index": 0 }]] },
+    "Get Media Links": { "main": [[{ "node": "Render Video (POST)", "type": "main", "index": 0 }]] },
+    "Render Video (POST)": { "main": [[{ "node": "Wait For Video", "type": "main", "index": 0 }]] },
+    "Wait For Video": { "main": [[{ "node": "Check Render Status", "type": "main", "index": 0 }]] },
+    "Check Render Status": { "main": [[{ "node": "Did Rendering Succeed?", "type": "main", "index": 0 }]] },
+    "Did Rendering Succeed?": {
+      "main": [
+        [{ "node": "Download Video", "type": "main", "index": 0 }],
+        [{ "node": "Update Idea Row - Error", "type": "main", "index": 0 }]
+      ]
+    },
+    "Download Video": { "main": [[{ "node": "Upload to YouTube", "type": "main", "index": 0 }]] },
+    "Upload to YouTube": { "main": [[{ "node": "Update Idea Row - Success", "type": "main", "index": 0 }]] }
+  }
+}

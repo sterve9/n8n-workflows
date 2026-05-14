@@ -1,0 +1,257 @@
+{
+  "name": "Relance Facture Automatique — Brevo",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "node-schedule",
+      "name": "Declencheur Quotidien 8h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [180, 300],
+      "notes": "Se declenche chaque jour a 8h00. Tu peux ajuster l'heure dans les parametres."
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": "REMPLACE_PAR_TON_DATABASE_ID_NOTION",
+        "returnAll": true,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Statut.select",
+              "condition": "equals",
+              "value": "En attente"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-notion-read",
+      "name": "Lire Factures Notion",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [400, 300],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-credential",
+          "name": "Notion API"
+        }
+      },
+      "notes": "Lit toutes les factures avec statut 'En attente' dans ta BDD Notion Finances."
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst result = [];\nconst now = new Date();\n\nfor (const item of items) {\n  const props = item.json.properties || {};\n  \n  // Recupere les champs cles (adapte les noms selon ta BDD Notion)\n  const dateFacture = props['Date']?.date?.start \n    || props['Date facture']?.date?.start\n    || null;\n  const prenomClient = props['Client']?.title?.[0]?.plain_text\n    || props['Nom client']?.rich_text?.[0]?.plain_text\n    || 'Client';\n  const emailClient = props['Email']?.email\n    || props['Email client']?.email\n    || null;\n  const montant = props['Montant']?.number\n    || props['Total']?.number\n    || 0;\n  const numeroFacture = props['Numero']?.rich_text?.[0]?.plain_text\n    || props['Reference']?.rich_text?.[0]?.plain_text\n    || 'N/A';\n  const pageId = item.json.id;\n\n  if (!dateFacture || !emailClient) continue;\n\n  const date = new Date(dateFacture);\n  const diffJours = Math.floor((now - date) / (1000 * 60 * 60 * 24));\n\n  // J+7 : premiere relance\n  if (diffJours >= 7 && diffJours < 8) {\n    result.push({\n      json: {\n        typeRelance: 'J+7',\n        pageId,\n        prenomClient,\n        emailClient,\n        montant,\n        numeroFacture,\n        dateFacture,\n        sujet: `Suivi — Facture #${numeroFacture}`,\n        diffJours\n      }\n    });\n  }\n  \n  // J+14 : deuxieme relance\n  if (diffJours >= 14 && diffJours < 15) {\n    result.push({\n      json: {\n        typeRelance: 'J+14',\n        pageId,\n        prenomClient,\n        emailClient,\n        montant,\n        numeroFacture,\n        dateFacture,\n        sujet: `URGENT — Facture #${numeroFacture} toujours en attente`,\n        diffJours\n      }\n    });\n  }\n}\n\nreturn result;"
+      },
+      "id": "node-filter",
+      "name": "Filtrer Factures J+7 et J+14",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [620, 300],
+      "notes": "Calcule les jours ecoules depuis la date de facture et identifie les relances J+7 et J+14."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-j7",
+              "leftValue": "={{ $json.typeRelance }}",
+              "rightValue": "J+7",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-switch",
+      "name": "Type de Relance",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [840, 300],
+      "notes": "Dirige vers le bon template email selon J+7 ou J+14."
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.emailClient }}",
+        "subject": "={{ $json.sujet }}",
+        "emailType": "html",
+        "message": "=<html>\n<body style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1a1a1a;\">\n\n  <div style=\"border-left: 4px solid #2563EB; padding-left: 16px; margin-bottom: 24px;\">\n    <p style=\"margin:0; font-size:13px; color:#6B7280;\">Rappel de paiement</p>\n    <h2 style=\"margin:4px 0; color:#2563EB;\">Facture #{{ $json.numeroFacture }}</h2>\n  </div>\n\n  <p>Bonjour <strong>{{ $json.prenomClient }}</strong>,</p>\n\n  <p>J'espere que tout se passe bien de ton cote.</p>\n\n  <p>Je me permets de revenir vers toi concernant la facture <strong>#{{ $json.numeroFacture }}</strong> \n  d'un montant de <strong>{{ $json.montant }} EUR</strong>, emise le {{ $json.dateFacture }}.</p>\n\n  <p>Si tu as des questions ou si quelque chose n'est pas clair, n'hesite pas a me repondre \n  directement a cet email.</p>\n\n  <div style=\"background:#F0F4FF; border-radius:8px; padding:16px; margin:24px 0;\">\n    <p style=\"margin:0; font-size:14px;\"><strong>Montant en attente :</strong> {{ $json.montant }} EUR</p>\n    <p style=\"margin:4px 0 0; font-size:13px; color:#6B7280;\">Reference : #{{ $json.numeroFacture }}</p>\n  </div>\n\n  <p>Cordialement,<br><strong>REMPLACE_PAR_TON_NOM</strong></p>\n\n  <hr style=\"border:none; border-top:1px solid #E5E7EB; margin:24px 0;\">\n  <p style=\"font-size:11px; color:#9CA3AF;\">Cet email a ete envoye automatiquement. Pour toute question, repondez a cet email.</p>\n\n</body>\n</html>",
+        "options": {
+          "senderName": "REMPLACE_PAR_TON_NOM",
+          "senderEmail": "REMPLACE_PAR_TON_EMAIL_PRO"
+        }
+      },
+      "id": "node-email-j7",
+      "name": "Email Relance J+7",
+      "type": "n8n-nodes-base.brevo",
+      "typeVersion": 1,
+      "position": [1060, 180],
+      "credentials": {
+        "brevoApi": {
+          "id": "brevo-credential",
+          "name": "Brevo API"
+        }
+      },
+      "notes": "Envoie la relance douce a J+7. Remplace REMPLACE_PAR_TON_NOM et REMPLACE_PAR_TON_EMAIL_PRO."
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.emailClient }}",
+        "subject": "={{ $json.sujet }}",
+        "emailType": "html",
+        "message": "=<html>\n<body style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1a1a1a;\">\n\n  <div style=\"border-left: 4px solid #EF4444; padding-left: 16px; margin-bottom: 24px;\">\n    <p style=\"margin:0; font-size:13px; color:#EF4444; font-weight:bold;\">RELANCE URGENTE</p>\n    <h2 style=\"margin:4px 0; color:#EF4444;\">Facture #{{ $json.numeroFacture }} — Action requise</h2>\n  </div>\n\n  <p>Bonjour <strong>{{ $json.prenomClient }}</strong>,</p>\n\n  <p>Malgre mon message precedent, la facture <strong>#{{ $json.numeroFacture }}</strong> \n  d'un montant de <strong>{{ $json.montant }} EUR</strong> reste a ce jour impayee.</p>\n\n  <p>Je te demande de regulariser cette situation <strong>sous 48h</strong>. \n  Passe ce delai, je me verrai contraint d'appliquer des penalites de retard conformement \n  a nos conditions.</p>\n\n  <div style=\"background:#FEF2F2; border:1px solid #EF4444; border-radius:8px; padding:16px; margin:24px 0;\">\n    <p style=\"margin:0; font-size:14px; color:#991B1B;\"><strong>Montant du : {{ $json.montant }} EUR</strong></p>\n    <p style=\"margin:4px 0 0; font-size:13px; color:#6B7280;\">Reference : #{{ $json.numeroFacture }}</p>\n  </div>\n\n  <p>Si tu rencontres des difficultes de paiement, contacte-moi directement pour trouver \n  une solution adaptee.</p>\n\n  <p>Cordialement,<br><strong>REMPLACE_PAR_TON_NOM</strong></p>\n\n  <hr style=\"border:none; border-top:1px solid #E5E7EB; margin:24px 0;\">\n  <p style=\"font-size:11px; color:#9CA3AF;\">Cet email a ete envoye automatiquement. Pour toute question, repondez a cet email.</p>\n\n</body>\n</html>",
+        "options": {
+          "senderName": "REMPLACE_PAR_TON_NOM",
+          "senderEmail": "REMPLACE_PAR_TON_EMAIL_PRO"
+        }
+      },
+      "id": "node-email-j14",
+      "name": "Email Relance J+14",
+      "type": "n8n-nodes-base.brevo",
+      "typeVersion": 1,
+      "position": [1060, 420],
+      "credentials": {
+        "brevoApi": {
+          "id": "brevo-credential",
+          "name": "Brevo API"
+        }
+      },
+      "notes": "Envoie la relance ferme a J+14. Remplace REMPLACE_PAR_TON_NOM et REMPLACE_PAR_TON_EMAIL_PRO."
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "update",
+        "pageId": "={{ $json.pageId }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Statut.select",
+              "selectValue": "Relance envoyee"
+            },
+            {
+              "key": "Date derniere relance.date",
+              "dateValue": "={{ new Date().toISOString().split('T')[0] }}"
+            }
+          ]
+        }
+      },
+      "id": "node-notion-update",
+      "name": "Mettre a jour Notion",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1280, 300],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-credential",
+          "name": "Notion API"
+        }
+      },
+      "notes": "Met a jour le statut de la facture dans Notion apres envoi de la relance."
+    }
+  ],
+  "connections": {
+    "Declencheur Quotidien 8h": {
+      "main": [
+        [
+          {
+            "node": "Lire Factures Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lire Factures Notion": {
+      "main": [
+        [
+          {
+            "node": "Filtrer Factures J+7 et J+14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtrer Factures J+7 et J+14": {
+      "main": [
+        [
+          {
+            "node": "Type de Relance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Type de Relance": {
+      "main": [
+        [
+          {
+            "node": "Email Relance J+7",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Email Relance J+14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Relance J+7": {
+      "main": [
+        [
+          {
+            "node": "Mettre a jour Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Relance J+14": {
+      "main": [
+        [
+          {
+            "node": "Mettre a jour Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateId": "relance-brevo-freelance-v1",
+    "description": "Workflow de relance automatique des factures impayees via Brevo. Se declenche chaque jour, detecte les factures J+7 et J+14, envoie les emails depuis ton adresse professionnelle et met a jour Notion.",
+    "author": "Steve Teweuchi Sibicho — guide-brevo-relances"
+  }
+}

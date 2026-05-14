@@ -1,0 +1,188 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "id": "05d1a6ed-d63e-4beb-a13c-5143c9d63f64",
+      "name": "Declencheur Quotidien 8h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-880, 128]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": "REMPLACE_PAR_TON_DATABASE_ID_NOTION",
+        "returnAll": true,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Statut.select",
+              "condition": "equals",
+              "value": "En attente"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "8a357bb3-19fa-4be1-80be-984719a0eb79",
+      "name": "Lire Factures Notion",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [-656, 128],
+      "credentials": {
+        "notionApi": {
+          "id": "V6ZMCVTvDa6C7E0v",
+          "name": "Notion account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst result = [];\nconst now = new Date();\n\nfor (const item of items) {\n  const props = item.json.properties || {};\n  \n  const dateFacture = props['Date']?.date?.start \n    || props['Date facture']?.date?.start\n    || null;\n  const prenomClient = props['Client']?.title?.[0]?.plain_text\n    || props['Nom client']?.rich_text?.[0]?.plain_text\n    || 'Client';\n  const emailClient = props['Email']?.email\n    || props['Email client']?.email\n    || null;\n  const montant = props['Montant']?.number\n    || props['Total']?.number\n    || 0;\n  const numeroFacture = props['Numero']?.rich_text?.[0]?.plain_text\n    || props['Reference']?.rich_text?.[0]?.plain_text\n    || 'N/A';\n  const pageId = item.json.id;\n\n  if (!dateFacture || !emailClient) continue;\n\n  const date = new Date(dateFacture);\n  const diffJours = Math.floor((now - date) / (1000 * 60 * 60 * 24));\n\n  if (diffJours >= 7 && diffJours < 8) {\n    result.push({\n      json: {\n        typeRelance: 'J+7',\n        pageId,\n        prenomClient,\n        emailClient,\n        montant,\n        numeroFacture,\n        dateFacture,\n        sujet: `Suivi — Facture #${numeroFacture}`,\n        diffJours\n      }\n    });\n  }\n  \n  if (diffJours >= 14 && diffJours < 15) {\n    result.push({\n      json: {\n        typeRelance: 'J+14',\n        pageId,\n        prenomClient,\n        emailClient,\n        montant,\n        numeroFacture,\n        dateFacture,\n        sujet: `URGENT — Facture #${numeroFacture} toujours en attente`,\n        diffJours\n      }\n    });\n  }\n}\n\nreturn result;"
+      },
+      "id": "8d53d7fa-7dd5-48ae-813e-898409179fcd",
+      "name": "Filtrer Factures J+7 et J+14",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-448, 128]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-j7",
+              "leftValue": "={{ $json.typeRelance }}",
+              "rightValue": "J+7",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "39bc0a0f-20cf-49ea-bcb4-0d24bfff2039",
+      "name": "Type de Relance",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-224, 128]
+    },
+    {
+      "parameters": {
+        "fromEmail": "contact@sterveshop.cloud",
+        "toEmail": "={{ $json.emailClient }}",
+        "subject": "={{ $json.sujet }}",
+        "message": "=<html><body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1a1a1a;\"><div style=\"border-left:4px solid #2563EB;padding-left:16px;margin-bottom:24px;\"><p style=\"margin:0;font-size:13px;color:#6B7280;\">Rappel de paiement</p><h2 style=\"margin:4px 0;color:#2563EB;\">Facture #{{ $json.numeroFacture }}</h2></div><p>Bonjour <strong>{{ $json.prenomClient }}</strong>,</p><p>J'espère que tout se passe bien de ton côté.</p><p>Je me permets de revenir vers toi concernant la facture <strong>#{{ $json.numeroFacture }}</strong> d'un montant de <strong>{{ $json.montant }} EUR</strong>, émise le {{ $json.dateFacture }}.</p><p>Si tu as des questions ou si quelque chose n'est pas clair, n'hésite pas à me répondre directement à cet email.</p><div style=\"background:#F0F4FF;border-radius:8px;padding:16px;margin:24px 0;\"><p style=\"margin:0;font-size:14px;\"><strong>Montant en attente :</strong> {{ $json.montant }} EUR</p><p style=\"margin:4px 0 0;font-size:13px;color:#6B7280;\">Référence : #{{ $json.numeroFacture }}</p></div><p>Cordialement,<br><strong>Steve Teweuchi Sibicho</strong></p><hr style=\"border:none;border-top:1px solid #E5E7EB;margin:24px 0;\"><p style=\"font-size:11px;color:#9CA3AF;\">Cet email a été envoyé automatiquement. Pour toute question, répondez à cet email.</p></body></html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [-32, -16],
+      "id": "f25c1dfc-f090-44a7-a6ed-08c7cafeae6e",
+      "name": "Email Relance J+7",
+      "credentials": {
+        "smtp": {
+          "id": "XEa3IB9YS9qcaD7V",
+          "name": "Brevo SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "contact@sterveshop.cloud",
+        "toEmail": "={{ $json.emailClient }}",
+        "subject": "={{ $json.sujet }}",
+        "message": "=<html><body style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1a1a1a;\"><div style=\"border-left:4px solid #EF4444;padding-left:16px;margin-bottom:24px;\"><p style=\"margin:0;font-size:13px;color:#EF4444;font-weight:bold;\">RELANCE URGENTE</p><h2 style=\"margin:4px 0;color:#EF4444;\">Facture #{{ $json.numeroFacture }} — Action requise</h2></div><p>Bonjour <strong>{{ $json.prenomClient }}</strong>,</p><p>Malgré mon message précédent, la facture <strong>#{{ $json.numeroFacture }}</strong> d'un montant de <strong>{{ $json.montant }} EUR</strong> reste à ce jour impayée.</p><p>Je te demande de régulariser cette situation <strong>sous 48h</strong>. Passé ce délai, je me verrai contraint d'appliquer des pénalités de retard.</p><div style=\"background:#FEF2F2;border:1px solid #EF4444;border-radius:8px;padding:16px;margin:24px 0;\"><p style=\"margin:0;font-size:14px;color:#991B1B;\"><strong>Montant dû : {{ $json.montant }} EUR</strong></p><p style=\"margin:4px 0 0;font-size:13px;color:#6B7280;\">Référence : #{{ $json.numeroFacture }}</p></div><p>Si tu rencontres des difficultés de paiement, contacte-moi directement pour trouver une solution adaptée.</p><p>Cordialement,<br><strong>Steve Teweuchi Sibicho</strong></p><hr style=\"border:none;border-top:1px solid #E5E7EB;margin:24px 0;\"><p style=\"font-size:11px;color:#9CA3AF;\">Cet email a été envoyé automatiquement. Pour toute question, répondez à cet email.</p></body></html>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [-16, 224],
+      "id": "dfe288c6-d537-42a5-9236-bc2110bb0e88",
+      "name": "Email Relance J+14",
+      "credentials": {
+        "smtp": {
+          "id": "XEa3IB9YS9qcaD7V",
+          "name": "Brevo SMTP"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "update",
+        "pageId": "={{ $json.pageId }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Statut.select",
+              "selectValue": "Relance envoyée"
+            },
+            {
+              "key": "Date derniere relance.date",
+              "dateValue": "={{ new Date().toISOString().split('T')[0] }}"
+            }
+          ]
+        }
+      },
+      "id": "cb0e627d-d95f-4685-87bf-2ab084963448",
+      "name": "Mettre a jour Notion",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [224, 128],
+      "credentials": {
+        "notionApi": {
+          "id": "V6ZMCVTvDa6C7E0v",
+          "name": "Notion account 2"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Declencheur Quotidien 8h": {
+      "main": [[{"node": "Lire Factures Notion", "type": "main", "index": 0}]]
+    },
+    "Lire Factures Notion": {
+      "main": [[{"node": "Filtrer Factures J+7 et J+14", "type": "main", "index": 0}]]
+    },
+    "Filtrer Factures J+7 et J+14": {
+      "main": [[{"node": "Type de Relance", "type": "main", "index": 0}]]
+    },
+    "Type de Relance": {
+      "main": [
+        [{"node": "Email Relance J+7", "type": "main", "index": 0}],
+        [{"node": "Email Relance J+14", "type": "main", "index": 0}]
+      ]
+    },
+    "Email Relance J+7": {
+      "main": [[{"node": "Mettre a jour Notion", "type": "main", "index": 0}]]
+    },
+    "Email Relance J+14": {
+      "main": [[{"node": "Mettre a jour Notion", "type": "main", "index": 0}]]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "09a4271ff440e2d4ed1d23d70521c8ceadc5f0cf389b7a9fad7d7fcb78f3bb2c"
+  }
+}

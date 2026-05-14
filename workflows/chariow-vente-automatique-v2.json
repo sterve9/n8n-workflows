@@ -1,0 +1,239 @@
+{
+  "name": "vente-automatique-V2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-incoming",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-560, 300],
+      "id": "05d902cb-d978-4602-a36c-84785dc09172",
+      "name": "📩 WhatsApp Incoming",
+      "webhookId": "cfef542f-f524-45cc-9850-e06a258ef1e4"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Gère les 2 types de messages WhatsApp : textMessage ET extendedTextMessage\nconst msgData = $json.body.messageData || {};\n\nlet rawText = '';\nif (msgData.typeMessage === 'textMessage') {\n  rawText = msgData.textMessageData?.textMessage || '';\n} else if (msgData.typeMessage === 'extendedTextMessage') {\n  rawText = msgData.extendedTextMessageData?.text || '';\n}\n\n// Nettoyage : trim + garde seulement le premier caractère si \"1 \", \" 2\", etc.\nconst text = rawText.trim();\n\n// chatId de l'expéditeur pour répondre\nconst chatId = $json.body.senderData?.chatId || '';\nconst senderName = $json.body.senderData?.senderName || 'toi';\n\nreturn [{ text, chatId, senderName }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-340, 300],
+      "id": "bd33c879-02d2-4f10-b9db-ee1ee4cf7e9b",
+      "name": "normalize-text"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "strict", "version": 3 },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "1",
+                    "operator": { "type": "string", "operation": "equals" },
+                    "id": "74bb34e1-e0fd-47ce-8474-b23afc57e966"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Offre 1 — Cure Express"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "strict", "version": 3 },
+                "conditions": [
+                  {
+                    "id": "d2f41ad1-e0d0-4cf6-9d5e-0f28b50c02d7",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "2",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Offre 2 — Cure Profonde"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": false, "typeValidation": "strict", "version": 3 },
+                "conditions": [
+                  {
+                    "id": "89cbcab2-1734-4bea-8e01-eb33d3add57f",
+                    "leftValue": "={{ $json.text }}",
+                    "rightValue": "3",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Offre 3 — Pack Complet"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Réponse inconnue"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [-100, 300],
+      "id": "b9502498-8bdd-43d1-8061-096aed24b21f",
+      "name": "📌 Switch Réponses WhatsApp"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://7105.api.greenapi.com/waInstance7105435827/sendMessage/ab1d0c6295bf4d15bc5e71581b391489abf5b0c42b784c0688",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{ $json.chatId }}"
+            },
+            {
+              "name": "message",
+              "value": "=Super choix ⚡\n\nVoici ton lien pour la *Cure Express 7 Jours* :\n👉 https://myfurbrush.com/rituelancestral7jours\n\nN'oublie pas ton code *ANCESTRAL50* au moment du paiement pour avoir *-50%* 🎁\n\nCode valable jusqu'au *5 avril 2026* uniquement ⏳\n\n_Tu as des questions ? Réponds ici, je suis là 😊_"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-offre1",
+      "name": "🔗 Envoyer lien Offre 1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://7105.api.greenapi.com/waInstance7105435827/sendMessage/ab1d0c6295bf4d15bc5e71581b391489abf5b0c42b784c0688",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{ $json.chatId }}"
+            },
+            {
+              "name": "message",
+              "value": "=Excellent choix 🔥\n\nVoici ton lien pour la *Cure Profonde 40 Jours* :\n👉 https://myfurbrush.com/cureprofonde40jours\n\nN'oublie pas ton code *ANCESTRAL50* au moment du paiement pour avoir *-50%* 🎁\n\nCode valable jusqu'au *5 avril 2026* uniquement ⏳\n\n_Tu as des questions ? Réponds ici, je suis là 😊_"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-offre2",
+      "name": "🔗 Envoyer lien Offre 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://7105.api.greenapi.com/waInstance7105435827/sendMessage/ab1d0c6295bf4d15bc5e71581b391489abf5b0c42b784c0688",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{ $json.chatId }}"
+            },
+            {
+              "name": "message",
+              "value": "=Le meilleur choix 👑\n\nVoici ton lien pour le *Pack Complet (accès à vie)* :\n👉 https://myfurbrush.com/packcompletancestral\n\nN'oublie pas ton code *ANCESTRAL50* au moment du paiement pour avoir *-50%* 🎁\n\nCode valable jusqu'au *5 avril 2026* uniquement ⏳\n\n_Tu as des questions ? Réponds ici, je suis là 😊_"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-offre3",
+      "name": "🔗 Envoyer lien Offre 3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 500]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://7105.api.greenapi.com/waInstance7105435827/sendMessage/ab1d0c6295bf4d15bc5e71581b391489abf5b0c42b784c0688",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{ $json.chatId }}"
+            },
+            {
+              "name": "message",
+              "value": "=Hmm, je n'ai pas bien compris 😅\n\nRéponds simplement *1*, *2* ou *3* pour choisir ton offre :\n\n*1* → Cure Express 7 Jours (2 950 FCFA)\n*2* → Cure Profonde 40 Jours (5 950 FCFA)\n*3* → Pack Complet à vie (8 950 FCFA)"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-fallback",
+      "name": "❓ Réponse inconnue — Relancer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [180, 700]
+    }
+  ],
+  "pinData": {
+    "📩 WhatsApp Incoming": [
+      {
+        "json": {
+          "body": {
+            "typeWebhook": "incomingMessageReceived",
+            "senderData": {
+              "chatId": "21655273396@c.us",
+              "senderName": "sterve90237"
+            },
+            "messageData": {
+              "typeMessage": "extendedTextMessage",
+              "extendedTextMessageData": {
+                "text": "2"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "connections": {
+    "📩 WhatsApp Incoming": {
+      "main": [
+        [{ "node": "normalize-text", "type": "main", "index": 0 }]
+      ]
+    },
+    "normalize-text": {
+      "main": [
+        [{ "node": "📌 Switch Réponses WhatsApp", "type": "main", "index": 0 }]
+      ]
+    },
+    "📌 Switch Réponses WhatsApp": {
+      "main": [
+        [{ "node": "🔗 Envoyer lien Offre 1", "type": "main", "index": 0 }],
+        [{ "node": "🔗 Envoyer lien Offre 2", "type": "main", "index": 0 }],
+        [{ "node": "🔗 Envoyer lien Offre 3", "type": "main", "index": 0 }],
+        [{ "node": "❓ Réponse inconnue — Relancer", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["rituel-ancestral", "vente", "whatsapp"]
+}

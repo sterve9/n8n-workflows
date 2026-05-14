@@ -1,0 +1,207 @@
+{
+  "name": "formulaire-rituel-V2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rituel-leads",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "d450e88c-0cef-44fa-a658-0dc9477d6005",
+      "name": "🎯 Webhook — Réception Lead",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-608, 208],
+      "webhookId": "rituel-leads-webhook"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({status: 'ok', message: 'Lead reçu'}) }}",
+        "options": {}
+      },
+      "id": "d47ecdeb-e970-4310-bb0a-09c6c618df41",
+      "name": "✅ Répondre 200 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [-352, 60]
+    },
+    {
+      "parameters": {
+        "jsCode": "const prenom = $json.body.prenom || 'toi';\nconst email = $json.body.email || '';\n\n// Nettoyage numéro WhatsApp\nlet whatsapp = $json.body.whatsapp || '';\nwhatsapp = whatsapp.replace(/\\s/g, '').replace('+', '');\nconst whatsapp_clean = whatsapp + '@c.us';\n\n// Prix officiels\nconst offre1 = 5900;\nconst offre2 = 11900;\nconst offre3 = 17900;\n\n// Réduction 50%\nconst reduction = 50;\nconst offre1Reduite = Math.round(offre1 * (1 - reduction / 100));\nconst offre2Reduite = Math.round(offre2 * (1 - reduction / 100));\nconst offre3Reduite = Math.round(offre3 * (1 - reduction / 100));\n\nreturn [{\n  prenom,\n  email,\n  whatsapp,\n  whatsapp_clean,\n  offre1,\n  offre2,\n  offre3,\n  offre1Reduite,\n  offre2Reduite,\n  offre3Reduite,\n  reduction,\n  codePromo: 'ANCESTRAL50'\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-352, 208],
+      "id": "178625e3-ae67-4a98-887b-7826b83c5c87",
+      "name": "Normalize Lead"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://7105.api.greenapi.com/waInstance7105435827/sendMessage/ab1d0c6295bf4d15bc5e71581b391489abf5b0c42b784c0688",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{ $json.whatsapp_clean }}"
+            },
+            {
+              "name": "message",
+              "value": "=Salut {{ $json.prenom }} 👋\n\nBonne nouvelle 🎉 ton accès est disponible avec *-50%* jusqu'au *5 avril* :\n\n⚡ *Offre 1 — Cure Express 7 Jours*\n~{{ $json.offre1 }} FCFA~ → *{{ $json.offre1Reduite }} FCFA*\n\n🔥 *Offre 2 — Cure Profonde 40 Jours*\n~{{ $json.offre2 }} FCFA~ → *{{ $json.offre2Reduite }} FCFA*\n\n👑 *Offre 3 — Pack Complet (à vie)*\n~{{ $json.offre3 }} FCFA~ → *{{ $json.offre3Reduite }} FCFA*\n\nTu économises jusqu'à *{{ $json.offre3 - $json.offre3Reduite }} FCFA* 💰\n\n⚠️ Code *{{ $json.codePromo }}* — valable jusqu'au 5 avril uniquement\n\nRéponds juste *1*, *2* ou *3* et je t'envoie le lien direct 👇"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2c3e4314-c885-461b-a9c1-0128c85c1fae",
+      "name": "📱 WhatsApp — Envoyer le coupon",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-80, 208]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "121cc142-1b83-4f52-93bb-0abfb336fdc1",
+              "name": "prenom",
+              "value": "={{ $json.prenom }}",
+              "type": "string"
+            },
+            {
+              "id": "c9f39d48-3e46-43ad-b391-92341d78d58a",
+              "name": "whatsapp_clean",
+              "value": "={{ $json.whatsapp_clean }}",
+              "type": "string"
+            },
+            {
+              "id": "cf3d6e19-1bf7-4341-b400-dea13eb634a6",
+              "name": "offre1",
+              "value": "={{ $json.offre1 }}",
+              "type": "number"
+            },
+            {
+              "id": "733cd01c-413e-4775-8419-adbbe462dd69",
+              "name": "offre2",
+              "value": "={{ $json.offre2 }}",
+              "type": "number"
+            },
+            {
+              "id": "a9b15294-c732-4bb9-959f-53a205c12d10",
+              "name": "offre3",
+              "value": "={{ $json.offre3 }}",
+              "type": "number"
+            },
+            {
+              "id": "a8455379-0196-44fc-b169-4f401f338cb2",
+              "name": "offre3Reduite",
+              "value": "={{ $json.offre3Reduite }}",
+              "type": "number"
+            },
+            {
+              "id": "fc00ae50-7ecb-45bf-bd06-0d1c00cd6e77",
+              "name": "offre1Reduite",
+              "value": "={{ $json.offre1Reduite }}",
+              "type": "number"
+            },
+            {
+              "id": "a4d2f699-6423-46eb-842f-d0910197397d",
+              "name": "offre2Reduite",
+              "value": "={{ $json.offre2Reduite }}",
+              "type": "number"
+            },
+            {
+              "id": "b1234567-0000-0000-0000-000000000001",
+              "name": "codePromo",
+              "value": "={{ $json.codePromo }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [128, 208],
+      "id": "e88d37cd-46a5-4d5e-aba1-dd980b9bee78",
+      "name": "Restore Data"
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "hours"
+      },
+      "id": "a0718b1c-aa9c-4a28-a69e-442ab13d17e9",
+      "name": "⏳ Attendre 2 heures",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [340, 208],
+      "webhookId": "151a202d-fa05-4c1b-aab9-588f2934460b"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://7105.api.greenapi.com/waInstance7105435827/sendMessage/ab1d0c6295bf4d15bc5e71581b391489abf5b0c42b784c0688",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "chatId",
+              "value": "={{ $json.whatsapp_clean }}"
+            },
+            {
+              "name": "message",
+              "value": "=Re {{ $json.prenom }} 👋\n\nJe me permets de revenir vers toi 🙂\n\nBeaucoup de personnes prennent l'offre aujourd'hui avec *-50%*, mais elle se termine très bientôt.\n\n👑 *Offre Premium : {{ $json.offre3Reduite }} FCFA* au lieu de ~{{ $json.offre3 }} FCFA~\n\nC'est la plus choisie en ce moment.\n\nRéponds *1*, *2* ou *3* pour que je t'envoie le lien direct avant la fin de l'offre ⏳"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d760dba3-99fa-4eda-9ea8-ec57f95df9e4",
+      "name": "📱 WhatsApp — Relance 2h",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [560, 208]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "🎯 Webhook — Réception Lead": {
+      "main": [
+        [
+          { "node": "✅ Répondre 200 OK", "type": "main", "index": 0 },
+          { "node": "Normalize Lead", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Normalize Lead": {
+      "main": [
+        [{ "node": "📱 WhatsApp — Envoyer le coupon", "type": "main", "index": 0 }]
+      ]
+    },
+    "📱 WhatsApp — Envoyer le coupon": {
+      "main": [
+        [{ "node": "Restore Data", "type": "main", "index": 0 }]
+      ]
+    },
+    "Restore Data": {
+      "main": [
+        [{ "node": "⏳ Attendre 2 heures", "type": "main", "index": 0 }]
+      ]
+    },
+    "⏳ Attendre 2 heures": {
+      "main": [
+        [{ "node": "📱 WhatsApp — Relance 2h", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": ["rituel-ancestral", "leads", "coupon"]
+}
